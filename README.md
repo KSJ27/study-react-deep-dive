@@ -29,33 +29,3 @@
 | 회차 | 날짜 | 단원 | 제목 |
 |:--:|:------:|:------:|:------:|
 | 01 | 2024-03-15 | 02 | 리액트 핵심 요소 깊게 살펴보기 |
-
-## 🏃‍♂️ 스터디원
-
-<table>
-  <tr>
-    <td>
-      <img src="https://github.com/KSJ27.png" width="120px" height="120px"/>
-    </td>
-    <td>
-    </td>
-    <td>
-    </td>
-     <td>
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="https://github.com/KSJ27">KSJ27</a>
-    </td>
-    <td>
-    </td>
-    <td>
-    </td>
-    <td>
-    </td>    
-    <td>
-    </td>
-  </tr>
-  </table>
