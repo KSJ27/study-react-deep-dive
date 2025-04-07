@@ -1,0 +1,285 @@
+# 4.3 Next.js 톺아보기
+
+## 4.3.1 Next.js란?
+
+**Next.js**는 Vercel에서 개발한 **React 기반 프레임워크**로, 다양한 렌더링 전략(SSR, SSG, CSR)을 지원하여 성능과 SEO 최적화를 도와줍니다.
+
+### 주요 특징
+
+- **파일 기반 라우팅**: `pages` 디렉토리 구조에 따라 라우트 자동 생성
+- **서버 사이드 렌더링(SSR)**: 서버에서 HTML을 생성하여 빠른 로딩 및 SEO 개선
+- **정적 사이트 생성(SSG)**: 빌드 시 정적인 HTML 생성 → 빠른 응답 속도
+- **API 라우트 지원**: `pages/api` 디렉토리에서 서버리스 API 구성 가능
+
+---
+
+## 4.3.2 Next.js 시작하기
+
+### 프로젝트 생성
+
+```bash
+npx create-next-app my-next-app
+```
+
+### 주요 디렉토리 및 파일 구조
+
+- `pages/`: 각 파일이 경로에 매핑되는 페이지 정의 (`about.js` → `/about`)
+- `public/`: 정적 파일(이미지, 폰트 등)을 저장하며 `/` 경로로 접근 가능
+- `styles/`: CSS 또는 SCSS 파일 저장
+
+### 설정 파일 소개
+
+#### `next.config.js`
+
+Next.js 프로젝트의 동작 방식을 설정하는 파일입니다.
+
+- 예시 설정 항목:
+  - 이미지 최적화
+  - 환경 변수
+  - 경로 alias
+  - 리디렉션/리라이트
+  - SSR 최적화 등
+
+```js
+/** @type {import('next').NextConfig} */
+```
+
+- 해당 주석은 타입 힌트와 자동완성을 제공
+
+#### ESLint 설정
+
+| 패키지 | 설명 |
+| --- | --- |
+| `eslint` | JavaScript 문법 검사 |
+| `eslint-plugin-react` | JSX 등 React 문법 검사 |
+| `eslint-plugin-next` | Next.js 전용 규칙 검사 |
+| `@typescript-eslint` | TypeScript 문법 검사 |
+
+
+
+#### 커스텀 파일
+
+| 파일 | 역할 | 실행 시점 | 설명 |
+| --- | --- | --- | --- |
+| `_app.tsx` | 최상위 컴포넌트 | 페이지 전환마다 | 전역 레이아웃, 전역 상태 관리 등 |
+| `_document.tsx` | HTML 문서 구조 설정 | 최초 HTML 생성 시 | 메타 태그, 웹폰트, SSR 스타일 등 |
+| `_error.tsx` | 커스텀 에러 페이지 | 에러 발생 시 | 404, 500 등 에러 UI 처리 |
+
+---
+
+## 4.3.3 Data Fetching
+Next.js에서는 데이터를 가져오는 방법으로 getStaticProps, getStaticPaths, getServerSideProps를 제공
+
+### `getStaticProps`
+
+- 빌드 시 데이터를 가져와 정적인 HTML을 생성
+- 자주 변경되지 않는 데이터에 적합
+
+#### 작동 방식 요약
+1. Next.js는 빌드할 때 `getStaticProps`를 실행
+2. API나 DB에서 데이터를 받아옴
+3. 그 데이터를 props로 넘겨 HTML로 만들어 둠
+4. 페이지 방문 시 이미 만들어진 HTML을 바로 보여줌 → ⚡ 엄청 빠름
+
+```js
+export async function getStaticProps() {
+  const res = await fetch('https://api.example.com/data');
+  const data = await res.json();
+
+  return {
+    props: { data },
+  };
+}
+```
+
+### `getStaticPaths`
+
+- 동적 라우팅 경로를 정적으로 생성할 때 사용
+- `getStaticProps`와 함께 사용
+
+#### 작동 방식 요약
+
+1. `getStaticPaths`가 "어떤 경로를 미리 만들지" 알려줌
+2. 각 경로마다 `getStaticProps`가 실행됨
+3. HTML 파일들이 미리 만들어짐
+
+```js
+export async function getStaticPaths() {
+  const paths = [{ params: { id: '1' } }, { params: { id: '2' } }];
+
+  return {
+    paths,
+    fallback: false,
+  };
+}
+```
+* fallback 옵션
+
+| 옵션 | 설명 |
+| --- | --- |
+| `false` | 정의된 경로 외 접근 시 404 |
+| `true` | 접근 시 로딩 후 생성 및 캐싱 |
+| `blocking` | 화면 렌더 전 생성 후 바로 보여줌 |
+
+### `getServerSideProps`
+
+- 매 요청 시 서버에서 데이터를 가져와 페이지 렌더링
+- 로그인 상태, 실시간 데이터에 유용
+- 클라이언트에서의 fetch와 달리, 서버에서는 도메인까지 명시해야 함 (`http://localhost:3000/api/...`)
+
+```js
+export async function getServerSideProps(context) {
+  const res = await fetch(`https://api.example.com/data/${context.params.id}`);
+  const data = await res.json();
+
+  return {
+    props: { data },
+  };
+}
+```
+
+#### context 객체
+
+| 속성 | 설명 |
+| --- | --- |
+| `params` | URL 파라미터 값 |
+| `query` | 쿼리 스트링 (예: `?page=1`) |
+| `req.cookies` | 요청의 쿠키 정보 |
+| `resolvedUrl` | 실제 요청된 URL 경로 |
+
+### `__NEXT_DATA__` & Hydration
+서버에서 데이터를 가져와서 props로 넘겼다. 사실 이 데이터는 HTML 안에 숨어서 같이 전달된다.Next.js는 서버에서 HTML을 만들고, __NEXT_DATA__라는 스크립트에 JSON 데이터를 담아서 브라우저에 보낸다. 브라우저는 이걸 받아서, 정적인 HTML에 React를 연결하는 과정을 거치는데요 — 이걸 바로 Hydration(하이드레이션) 이라고 한다.
+
+- SSR 시 데이터가 `<script id="__NEXT_DATA__">`에 JSON으로 포함됨
+- 브라우저에서 이 데이터를 사용해 React와 연결 → Hydration
+
+| 단계 | 설명 |
+| --- | --- |
+| 1 | SSR로 HTML 수신 (빠른 초기 렌더링) |
+| 2 | 브라우저에서 React 실행 |
+| 3 | Hydration으로 인터랙션 활성화 |
+
+### `getInitialProps` (Deprecated)
+
+- 현재는 `getStaticProps`, `getServerSideProps`, `useEffect` 등으로 대체됨
+
+---
+
+## 4.3.5 스타일링 방법
+
+### 1. CSS Modules
+
+- 컴포넌트 단위 CSS 작성
+- 클래스명이 자동으로 고유화됨 → 충돌 방지
+
+```css
+/* styles/Home.module.css */
+.title {
+  color: blue;
+}
+```
+
+```js
+import styles from '../styles/Home.module.css';
+
+export default function Home() {
+  return <h1 className={styles.title}>Hello</h1>;
+}
+```
+
+### 2. Sass/SCSS
+
+- 변수, 중첩, 계산 등 기능 제공
+- 복잡한 스타일 시스템에 유리
+
+```scss
+// variables.scss
+$primary: #3498db;
+$gray-100: #f5f5f5;
+```
+
+```scss
+// style.scss
+@import './variables';
+
+.button {
+  background-color: $primary;
+  &:hover {
+    background-color: darken($primary, 10%);
+  }
+}
+```
+
+### 3. Styled-Components
+
+- CSS-in-JS 방식
+- 로직과 스타일을 하나의 파일에서 관리
+
+```js
+import styled from 'styled-components';
+
+const Title = styled.h1`
+  color: #0070f3;
+`;
+
+export default function Home() {
+  return <Title>Hello</Title>;
+}
+```
+
+---
+
+## 4.3.6 `_app.tsx` 응용
+
+### 공통 레이아웃 적용
+
+```js
+import Layout from '../components/Layout';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+```
+
+### 전역 상태 관리
+
+```tsx
+import { Provider } from 'react-redux';
+import store from '../store';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Provider store={store}>
+      <Component {...pageProps} />
+    </Provider>
+  );
+}
+```
+
+### 테마 적용 (styled-components 예시)
+
+```js
+import { ThemeProvider } from 'styled-components';
+import theme from '../styles/theme';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <ThemeProvider theme={theme}>
+      <Component {...pageProps} />
+    </ThemeProvider>
+  );
+}
+```
+
+### 기타 응용
+
+- 로그인 상태 확인
+- 공통 API Provider
+- 라우트 변경 감지 후 처리 등
+
+---
+
